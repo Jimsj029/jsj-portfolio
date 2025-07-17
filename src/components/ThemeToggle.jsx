@@ -1,15 +1,20 @@
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { Sun, Moon } from "lucide-react";
 import { cn } from "../lib/utils"; // Assuming you have a utility function for class names
 
 export const ThemeToggle = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) {
       setIsDarkMode(savedTheme === "dark");
       document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    } else {
+      // Default to dark mode if no saved theme
+      setIsDarkMode(true);
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
     }
   }, []);
 
