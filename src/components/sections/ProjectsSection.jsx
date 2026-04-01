@@ -660,7 +660,7 @@ export const ProjectsSection = () => {
                           key={`${projectKey(project)}-dot-${idx}`}
                           type="button"
                           aria-label={`Go to image ${idx + 1}`}
-                          className={`h-2 w-2 rounded-full ${idx === (Number.isFinite(activeImageByProject[projectKey(project)]) ? activeImageByProject[projectKey(project)] : 0) ? 'bg-white' : 'bg-white/50'}`}
+                          className={`h-2 w-2 rounded-full ${idx === (Number.isFinite(activeImageByProject[projectKey(project)]) ? activeImageByProject[projectKey(project)] : 0) ? 'bg-primary' : 'bg-primary/40'}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveImageByProject((prev) => ({
