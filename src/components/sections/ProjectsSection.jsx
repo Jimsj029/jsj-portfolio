@@ -162,7 +162,8 @@ export const ProjectsSection = () => {
     try {
       let uploadedImage = null;
       if (imageFile) {
-        uploadedImage = await uploadProjectImage(imageFile);
+        const token = await getToken();
+        uploadedImage = await uploadProjectImage(imageFile, token);
       }
 
       const payload = {
