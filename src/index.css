@@ -8,6 +8,12 @@
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
 
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
   --color-card: hsl(var(--card));
   
   --animate-float: float 6s ease-in-out infinite;
@@ -45,6 +51,15 @@
       transform: translateY(0);
     }
   }
+
+  @keyframes grow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
   @keyframes meteor {
     0% {
       transform: rotate(215deg) translateX(0);
@@ -67,7 +82,14 @@
   --card: 0 0% 100%;
 
   --primary: 250 47% 60%;
+  --primary-foreground: 0 0% 100%;
   --primary-background: 210 47% 98%;
+
+  --secondary: 214 32% 96%;
+  --secondary-foreground: 222 47% 11%;
+
+  --muted: 214 32% 96%;
+  --muted-foreground: 215 16% 47%;
 
   --border: 214 32% 91%;
  }
@@ -79,7 +101,14 @@
   --card: 222 47% 8%;
 
   --primary: 250 65% 65%;
+  --primary-foreground: 0 0% 100%;
   --primary-background: 213 31% 91%;
+
+  --secondary: 222 47% 12%;
+  --secondary-foreground: 213 31% 91%;
+
+  --muted: 222 47% 12%;
+  --muted-foreground: 215 20% 65%;
 
   --border: 213 33% 20%;
  }
@@ -122,6 +151,10 @@
 @utility text-glow{
   @apply relative;
   text-shadow: 0 0 10px rgba(167,139,250,0.5);
+}
+
+@utility text-gradient{
+  @apply bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent;
 }
 
 @utility card-hover{
