@@ -1,10 +1,19 @@
 import React, { useEffect, useState } from 'react';
 
-export const ImageModal = ({ isOpen, onClose, imageSrc, imageAlt }) => {
+export const ImageModal = ({ isOpen, onClose, imageSrc, imageUrls = [], initialIndex = 0, imageAlt }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [stars, setStars] = useState([]);
   const [meteors, setMeteors] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const normalizedImages = Array.isArray(imageUrls) && imageUrls.length > 0
+    ? imageUrls.filter(Boolean)
+    : imageSrc
+    ? [imageSrc]
+    : [];
+  const activeImage = normalizedImages[activeIndex] || imageSrc;
+  const hasMultipleImages = normalizedImages.length > 1;
 
   // Generate stars and meteors for modal background
   const generateStars = () => {
@@ -48,6 +57,10 @@ export const ImageModal = ({ isOpen, onClose, imageSrc, imageAlt }) => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
         onClose();
+      } else if (e.key === 'ArrowRight' && hasMultipleImages) {
+        setActiveIndex((prev) => (prev + 1) % normalizedImages.length);
+      } else if (e.key === 'ArrowLeft' && hasMultipleImages) {
+        setActiveIndex((prev) => (prev - 1 + normalizedImages.length) % normalizedImages.length);
       }
     };
 
@@ -62,15 +75,26 @@ export const ImageModal = ({ isOpen, onClose, imageSrc, imageAlt }) => {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, hasMultipleImages, normalizedImages.length]);
 
   // Reset image states when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setImageLoaded(false);
       setImageError(false);
+      if (normalizedImages.length > 0) {
+        const safeIndex = Math.min(Math.max(initialIndex, 0), normalizedImages.length - 1);
+        setActiveIndex(safeIndex);
+      } else {
+        setActiveIndex(0);
+      }
     }
-  }, [isOpen, imageSrc]);
+  }, [isOpen, imageSrc, initialIndex, imageUrls, normalizedImages.length]);
+
+  useEffect(() => {
+    setImageLoaded(false);
+    setImageError(false);
+  }, [activeIndex]);
 
   if (!isOpen) return null;
 
@@ -111,7 +135,7 @@ export const ImageModal = ({ isOpen, onClose, imageSrc, imageAlt }) => {
           />
         ))}
       </div>
-      <div className="relative max-w-[90vw] max-h-[90vh] m-4">
+      <div className="relative w-[min(92vw,1200px)] h-[min(82vh,760px)] m-4">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -134,40 +158,74 @@ export const ImageModal = ({ isOpen, onClose, imageSrc, imageAlt }) => {
           </svg>
         </button>
 
+        {hasMultipleImages ? (
+          <>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveIndex((prev) => (prev - 1 + normalizedImages.length) % normalizedImages.length);
+              }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 px-3 py-2 rounded-full bg-black/60 text-white"
+              aria-label="Previous image"
+            >
+              {'<'}
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveIndex((prev) => (prev + 1) % normalizedImages.length);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 px-3 py-2 rounded-full bg-black/60 text-white"
+              aria-label="Next image"
+            >
+              {'>'}
+            </button>
+          </>
+        ) : null}
+
         {/* Image container */}
         <div
-          className="relative bg-white rounded-lg shadow-2xl overflow-hidden"
+          className="relative h-full w-full bg-black/30 rounded-lg shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Loading spinner */}
           {!imageLoaded && !imageError && (
-            <div className="flex items-center justify-center w-full h-64 bg-gray-100">
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
           )}
 
           {/* Error state */}
           {imageError && (
-            <div className="flex flex-col items-center justify-center w-full h-64 bg-gray-100 text-gray-500">
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 text-gray-200">
               <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <p>Image could not be loaded</p>
-              <p className="text-sm mt-1">Path: {imageSrc}</p>
+              <p className="text-sm mt-1">Path: {activeImage}</p>
             </div>
           )}
 
           {/* Image */}
           <img
-            src={imageSrc}
+            src={activeImage}
             alt={imageAlt}
-            className={`w-full h-auto max-h-[80vh] object-contain transition-opacity duration-300 ${
+            className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
               imageLoaded ? 'opacity-100' : 'opacity-0'
             }`}
             onLoad={() => setImageLoaded(true)}
             onError={() => setImageError(true)}
             style={{ display: imageError ? 'none' : 'block' }}
           />
+
+          {hasMultipleImages ? (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/60 text-white text-xs">
+              {activeIndex + 1} / {normalizedImages.length}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

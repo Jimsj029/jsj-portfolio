@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ImageModal } from '../ImageModal';
 import {
   createProject,
@@ -16,6 +16,7 @@ const fallbackProjects = [
     title: "Basic Email Sender",
     description: "A simple email sender application",
     imageUrl: "/projects/emailsender.png",
+    imageUrls: ["/projects/emailsender.png"],
     tags: ["React", "Node.js", "Nodemailer", "HTML/CSS"],
     order: 1,
     published: true,
@@ -25,6 +26,7 @@ const fallbackProjects = [
     title: "Basic Email Template Builder",
     description: "A simple email template builder application",
     imageUrl: "/projects/emailtemplatebuilder.png",
+    imageUrls: ["/projects/emailtemplatebuilder.png"],
     tags: ["React", "Node.js", "Nodemailer", "HTML/CSS", "Quill.js"],
     order: 2,
     published: true,
@@ -34,6 +36,7 @@ const fallbackProjects = [
     title: "Basic Login System",
     description: "A simple login system application",
     imageUrl: "/projects/login.png",
+    imageUrls: ["/projects/login.png"],
     tags: ["Laravel", "HTML/CSS", "PHP", "MySQL"],
     order: 3,
     published: true,
@@ -51,6 +54,9 @@ export const ProjectsSection = () => {
   const [savingProject, setSavingProject] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [editingProjectId, setEditingProjectId] = useState('');
+  const [activeImageByProject, setActiveImageByProject] = useState({});
+  const dragStateRef = useRef({});
+  const suppressClickRef = useRef({});
 
   const [form, setForm] = useState({
     title: '',
@@ -60,8 +66,10 @@ export const ProjectsSection = () => {
     liveUrl: '',
     order: 1,
     published: true,
+    existingImageUrls: [],
+    existingImagePublicIds: [],
   });
-  const [imageFile, setImageFile] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]);
   const [tagInput, setTagInput] = useState('');
 
   const toTagList = (tags) => {
@@ -83,7 +91,101 @@ export const ProjectsSection = () => {
     return `https://${trimmed}`;
   };
 
-  const fetchProjects = async () => {
+  const projectKey = (project) => String(project?.id ?? project?.title ?? 'project');
+
+  const getProjectImages = (project) => {
+    const fromArray = Array.isArray(project?.imageUrls)
+      ? project.imageUrls.filter(Boolean)
+      : [];
+    if (fromArray.length > 0) return fromArray;
+    if (project?.imageUrl) return [project.imageUrl];
+    return [];
+  };
+
+  const getProjectImagePublicIds = (project) => {
+    const fromArray = Array.isArray(project?.imagePublicIds)
+      ? project.imagePublicIds.filter(Boolean)
+      : [];
+    if (fromArray.length > 0) return fromArray;
+    if (project?.imagePublicId) return [project.imagePublicId];
+    return [];
+  };
+
+  const setNextImage = (project, direction) => {
+    const images = getProjectImages(project);
+    if (images.length <= 1) return;
+
+    const key = projectKey(project);
+    setActiveImageByProject((prev) => {
+      const current = Number.isFinite(prev[key]) ? prev[key] : 0;
+      const nextIndex = (current + direction + images.length) % images.length;
+      return { ...prev, [key]: nextIndex };
+    });
+  };
+
+  const handleCarouselPointerDown = (project, event) => {
+    const key = projectKey(project);
+    dragStateRef.current[key] = {
+      startX: event.clientX,
+      moved: false,
+      pointerId: event.pointerId,
+    };
+  };
+
+  const handleCarouselPointerMove = (project, event) => {
+    const key = projectKey(project);
+    const state = dragStateRef.current[key];
+    if (!state) return;
+    if (typeof state.pointerId === 'number' && state.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - state.startX;
+    if (Math.abs(deltaX) > 8) {
+      state.moved = true;
+    }
+  };
+
+  const handleCarouselPointerUp = (project, event) => {
+    const key = projectKey(project);
+    const state = dragStateRef.current[key];
+    if (!state) return;
+    if (typeof state.pointerId === 'number' && state.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - state.startX;
+    if (Math.abs(deltaX) > 8) {
+      suppressClickRef.current[key] = true;
+    }
+
+    if (Math.abs(deltaX) >= 35) {
+      if (deltaX < 0) {
+        setNextImage(project, 1);
+      } else {
+        setNextImage(project, -1);
+      }
+    }
+
+    delete dragStateRef.current[key];
+  };
+
+  const handleCarouselPointerCancel = (project) => {
+    const key = projectKey(project);
+    delete dragStateRef.current[key];
+  };
+
+  const handleCarouselClick = (project) => {
+    const key = projectKey(project);
+    if (suppressClickRef.current[key]) {
+      suppressClickRef.current[key] = false;
+      return;
+    }
+
+    const images = getProjectImages(project);
+    const activeIndex = Number.isFinite(activeImageByProject[key])
+      ? activeImageByProject[key]
+      : 0;
+    handleImageClick(project, images[activeIndex] || images[0]);
+  };
+
+  const fetchProjects = useCallback(async () => {
     setLoadingProjects(true);
     try {
       const items = await listProjects({ publishedOnly: !(isAdmin && editMode) });
@@ -97,11 +199,33 @@ export const ProjectsSection = () => {
     } finally {
       setLoadingProjects(false);
     }
-  };
+  }, [isAdmin, editMode]);
 
   useEffect(() => {
     fetchProjects();
-  }, [isAdmin, editMode]);
+  }, [fetchProjects]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setActiveImageByProject((prev) => {
+        const next = { ...prev };
+        projects.forEach((project) => {
+          const images = getProjectImages(project);
+          if (images.length <= 1) {
+            next[projectKey(project)] = 0;
+            return;
+          }
+          const current = Number.isFinite(next[projectKey(project)])
+            ? next[projectKey(project)]
+            : 0;
+          next[projectKey(project)] = (current + 1) % images.length;
+        });
+        return next;
+      });
+    }, 4000);
+
+    return () => window.clearInterval(intervalId);
+  }, [projects]);
 
   const resetForm = () => {
     setForm({
@@ -112,9 +236,11 @@ export const ProjectsSection = () => {
       liveUrl: '',
       order: projects.length + 1,
       published: true,
+      existingImageUrls: [],
+      existingImagePublicIds: [],
     });
     setTagInput('');
-    setImageFile(null);
+    setImageFiles([]);
     setEditingProjectId('');
   };
 
@@ -128,9 +254,11 @@ export const ProjectsSection = () => {
       liveUrl: project.liveUrl ?? '',
       order: Number.isFinite(project.order) ? project.order : 1,
       published: project.published === true,
+      existingImageUrls: getProjectImages(project),
+      existingImagePublicIds: getProjectImagePublicIds(project),
     });
     setTagInput('');
-    setImageFile(null);
+    setImageFiles([]);
   };
 
   const addTag = () => {
@@ -152,6 +280,14 @@ export const ProjectsSection = () => {
     }));
   };
 
+  const removeExistingImage = (indexToRemove) => {
+    setForm((prev) => ({
+      ...prev,
+      existingImageUrls: prev.existingImageUrls.filter((_, index) => index !== indexToRemove),
+      existingImagePublicIds: prev.existingImagePublicIds.filter((_, index) => index !== indexToRemove),
+    }));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!isAdmin || !editMode) return;
@@ -160,10 +296,13 @@ export const ProjectsSection = () => {
     setActionMessage('');
 
     try {
-      let uploadedImage = null;
-      if (imageFile) {
+      let uploadedImages = [];
+      if (imageFiles.length > 0) {
         const token = await getToken();
-        uploadedImage = await uploadProjectImage(imageFile, token);
+        for (const file of imageFiles) {
+          const uploaded = await uploadProjectImage(file, token);
+          uploadedImages.push(uploaded);
+        }
       }
 
       const payload = {
@@ -176,24 +315,44 @@ export const ProjectsSection = () => {
         published: Boolean(form.published),
       };
 
-      if (uploadedImage) {
-        payload.imageUrl = uploadedImage.imageUrl;
-        payload.imagePublicId = uploadedImage.imagePublicId;
+      const keptImageUrls = Array.isArray(form.existingImageUrls) ? form.existingImageUrls : [];
+      const keptImagePublicIds = Array.isArray(form.existingImagePublicIds)
+        ? form.existingImagePublicIds
+        : [];
+      const uploadedImageUrls = uploadedImages.map((item) => item.imageUrl);
+      const uploadedImagePublicIds = uploadedImages.map((item) => item.imagePublicId);
+
+      payload.imageUrls = [...keptImageUrls, ...uploadedImageUrls];
+      payload.imagePublicIds = [...keptImagePublicIds, ...uploadedImagePublicIds];
+
+      if (payload.imageUrls.length > 0) {
+        // Keep single-image fields for backward compatibility.
+        payload.imageUrl = payload.imageUrls[0];
+        payload.imagePublicId = payload.imagePublicIds[0];
+      } else {
+        payload.imageUrl = '';
+        payload.imagePublicId = '';
       }
 
       if (editingProjectId) {
         const previous = projects.find((item) => item.id === editingProjectId);
         await updateProject(editingProjectId, payload);
 
-        if (uploadedImage && previous?.imagePublicId) {
+        const previousPublicIds = getProjectImagePublicIds(previous);
+        const nextPublicIds = payload.imagePublicIds;
+        const removedPublicIds = previousPublicIds.filter(
+          (publicId) => !nextPublicIds.includes(publicId)
+        );
+
+        if (removedPublicIds.length > 0) {
           const token = await getToken();
-          await deleteProjectImage(previous.imagePublicId, token);
+          await Promise.all(removedPublicIds.map((publicId) => deleteProjectImage(publicId, token)));
         }
 
         setActionMessage('Project updated');
       } else {
-        if (!uploadedImage) {
-          throw new Error('Please choose an image file for a new project.');
+        if (payload.imageUrls.length === 0) {
+          throw new Error('Please choose at least one image file for a new project.');
         }
         await createProject(payload);
         setActionMessage('Project created');
@@ -216,10 +375,11 @@ export const ProjectsSection = () => {
     setActionMessage('');
     try {
       await deleteProject(project.id);
-      if (project.imagePublicId) {
-        const token = await getToken();
-        await deleteProjectImage(project.imagePublicId, token);
-      }
+      const publicIds = getProjectImagePublicIds(project);
+      if (publicIds.length > 0) {
+          const token = await getToken();
+          await Promise.all(publicIds.map((publicId) => deleteProjectImage(publicId, token)));
+        }
       if (editingProjectId === project.id) resetForm();
       setActionMessage('Project deleted');
       await fetchProjects();
@@ -229,8 +389,15 @@ export const ProjectsSection = () => {
     }
   };
 
-  const handleImageClick = (project) => {
-    setSelectedImage(project);
+  const handleImageClick = (project, imageUrl) => {
+    const images = getProjectImages(project);
+    const selectedIndex = images.findIndex((img) => img === imageUrl);
+    setSelectedImage({
+      title: project?.title,
+      imageUrl: imageUrl || images[0],
+      imageUrls: images,
+      initialIndex: selectedIndex >= 0 ? selectedIndex : 0,
+    });
     setIsModalOpen(true);
   };
 
@@ -323,13 +490,51 @@ export const ProjectsSection = () => {
                 </div>
               </div>
               <div>
-                <label className="text-sm text-muted-foreground">Image File</label>
+                <label className="text-sm text-muted-foreground">Project Images</label>
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
+                  multiple
                   className="w-full rounded-md bg-secondary/70 px-3 py-2 mt-1"
-                  onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+                  onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {imageFiles.length > 0
+                    ? `${imageFiles.length} image(s) selected`
+                    : editingProjectId
+                    ? 'Select files only if you want to replace existing images.'
+                    : 'Choose one or more images.'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tip: Use Ctrl or Shift while selecting to pick multiple files.
+                </p>
+
+                {form.existingImageUrls.length > 0 ? (
+                  <div className="mt-3">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Existing images: {form.existingImageUrls.length}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {form.existingImageUrls.map((imgUrl, idx) => (
+                        <div key={`${imgUrl}-${idx}`} className="relative rounded overflow-hidden">
+                          <img
+                            src={imgUrl}
+                            alt={`Project image ${idx + 1}`}
+                            className="h-20 w-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            className="absolute top-1 right-1 px-2 py-0.5 rounded bg-black/60 text-white text-xs"
+                            onClick={() => removeExistingImage(idx)}
+                            aria-label={`Remove image ${idx + 1}`}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <div>
                 <label className="text-sm text-muted-foreground">Live URL</label>
@@ -390,15 +595,84 @@ export const ProjectsSection = () => {
               key={project.id ?? project.title}
               className="group bg-card rounded-lg overflow-hidden shadow-xs card-hover"
             >
-              <div className="relative cursor-pointer" onClick={() => handleImageClick(project)}>
-                <img
-                  src={project.imageUrl}
-                  alt={project.title}
-                  className="w-full h-40 object-cover rounded mb-4 transition-transform duration-300 group-hover:scale-105"
-                  onError={(e) => {
-                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y3ZjdmNyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE4IiBmaWxsPSIjYWFhIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';
-                  }}
-                />
+              <div className="relative mb-4">
+                <div
+                  className="relative overflow-hidden rounded cursor-pointer touch-pan-y"
+                  onClick={() => handleCarouselClick(project)}
+                  onPointerDown={(event) => handleCarouselPointerDown(project, event)}
+                  onPointerMove={(event) => handleCarouselPointerMove(project, event)}
+                  onPointerUp={(event) => handleCarouselPointerUp(project, event)}
+                  onPointerCancel={() => handleCarouselPointerCancel(project)}
+                  onPointerLeave={(event) => handleCarouselPointerUp(project, event)}
+                >
+                  <div
+                    className="flex w-full will-change-transform [backface-visibility:hidden] transition-transform duration-500 ease-out"
+                    style={{
+                      transform: `translateX(-${(Number.isFinite(activeImageByProject[projectKey(project)]) ? activeImageByProject[projectKey(project)] : 0) * 100}%)`,
+                    }}
+                  >
+                    {getProjectImages(project).map((imageUrl, idx) => (
+                      <div key={`${projectKey(project)}-image-${idx}`} className="relative w-full shrink-0 basis-full aspect-[16/10] bg-secondary/40">
+                        <img
+                          src={imageUrl}
+                          alt={`${project.title} screenshot ${idx + 1}`}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          draggable={false}
+                          onDragStart={(event) => event.preventDefault()}
+                          onError={(e) => {
+                            e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y3ZjdmNyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE4IiBmaWxsPSIjYWFhIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg==';
+                            e.target.onerror = null;
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {getProjectImages(project).length > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Previous image"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 z-10 px-2 py-1 rounded-full bg-black/45 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setNextImage(project, -1);
+                      }}
+                    >
+                      {'<'}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next image"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 z-10 px-2 py-1 rounded-full bg-black/45 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setNextImage(project, 1);
+                      }}
+                    >
+                      {'>'}
+                    </button>
+
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10">
+                      {getProjectImages(project).map((_, idx) => (
+                        <button
+                          key={`${projectKey(project)}-dot-${idx}`}
+                          type="button"
+                          aria-label={`Go to image ${idx + 1}`}
+                          className={`h-2 w-2 rounded-full ${idx === (Number.isFinite(activeImageByProject[projectKey(project)]) ? activeImageByProject[projectKey(project)] : 0) ? 'bg-white' : 'bg-white/50'}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveImageByProject((prev) => ({
+                              ...prev,
+                              [projectKey(project)]: idx,
+                            }));
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </>
+                ) : null}
               </div>
               <div className="p-4">
                 <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
@@ -491,6 +765,8 @@ export const ProjectsSection = () => {
           isOpen={isModalOpen}
           onClose={closeModal}
           imageSrc={selectedImage?.imageUrl}
+          imageUrls={selectedImage?.imageUrls}
+          initialIndex={selectedImage?.initialIndex ?? 0}
           imageAlt={selectedImage?.title}
           projectTitle={selectedImage?.title}
         />
