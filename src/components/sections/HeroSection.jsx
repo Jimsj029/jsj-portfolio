@@ -19,7 +19,7 @@ export const HeroSection = () => {
                          A. San Juan</span>
                 </h1>
 
-                <p className="text-lg md:text-xl text-muted-foreground max-2-2xl mx-auto opacity-0 animate-fade-in-delay-3">
+                <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto opacity-0 animate-fade-in-delay-3">
                     Hi, I'm a passionate web developer with a focus on creating beautiful and functional user experiences. 
                     I love coding, learning new technologies, and building projects that are user-friendly.
                 </p>
