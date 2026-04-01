@@ -1,6 +1,7 @@
 import { ThemeToggle } from "../components/ThemeToggle"
 import {StarBackground} from "../components/StarBackground"
 import { NavBar } from "../components/NavBar"
+import { AdminControls } from "@/components/AdminControls"
 import { HeroSection } from "../components/sections/HeroSection"
 import { AboutSection } from "../components/sections/AboutSection"
 import { SkillsSection } from "../components/sections/SkilsSection"
@@ -13,6 +14,9 @@ export const Home = () => {
       {/* Theme Toggle */}
 
       <ThemeToggle />
+
+      {/* Admin Controls */}
+      <AdminControls />
       
       {/* Background Effects */}
 

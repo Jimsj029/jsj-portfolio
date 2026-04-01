@@ -1,33 +1,56 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ImageModal } from '../ImageModal';
+import { listProjects } from '@/lib/contentApi';
 
-const projects = [
+const fallbackProjects = [
   {
     id: 1,
     title: "Basic Email Sender",
     description: "A simple email sender application",
-    image: "/projects/emailsender.png",
+    imageUrl: "/projects/emailsender.png",
     tags: ["React", "Node.js", "Nodemailer", "HTML/CSS"],
+    order: 1,
+    published: true,
   },
   {
     id: 2,
     title: "Basic Email Template Builder",
     description: "A simple email template builder application",
-    image: "/projects/emailtemplatebuilder.png",
+    imageUrl: "/projects/emailtemplatebuilder.png",
     tags: ["React", "Node.js", "Nodemailer", "HTML/CSS", "Quill.js"],
+    order: 2,
+    published: true,
   },
   {
     id: 3,
     title: "Basic Login System",
     description: "A simple login system application",
-    image: "/projects/login.png",
+    imageUrl: "/projects/login.png",
     tags: ["Laravel", "HTML/CSS", "PHP", "MySQL"],
+    order: 3,
+    published: true,
   },
 ];
 
 export const ProjectsSection = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [projects, setProjects] = useState(fallbackProjects);
+
+  useEffect(() => {
+    let cancelled = false;
+    listProjects({ publishedOnly: true })
+      .then((items) => {
+        if (cancelled) return;
+        if (Array.isArray(items) && items.length > 0) setProjects(items);
+      })
+      .catch(() => {
+        // Keep fallbackProjects on error
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleImageClick = (project) => {
     setSelectedImage(project);
@@ -51,14 +74,14 @@ export const ProjectsSection = () => {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {projects.map((project, key) => (
+          {projects.map((project) => (
             <div
-              key={key}
+              key={project.id ?? project.title}
               className="group bg-card rounded-lg overflow-hidden shadow-xs card-hover"
             >
               <div className="relative cursor-pointer" onClick={() => handleImageClick(project)}>
                 <img
-                  src={project.image}
+                  src={project.imageUrl}
                   alt={project.title}
                   className="w-full h-40 object-cover rounded mb-4 transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
@@ -101,7 +124,7 @@ export const ProjectsSection = () => {
         <ImageModal
           isOpen={isModalOpen}
           onClose={closeModal}
-          imageSrc={selectedImage?.image}
+          imageSrc={selectedImage?.imageUrl}
           imageAlt={selectedImage?.title}
           projectTitle={selectedImage?.title}
         />

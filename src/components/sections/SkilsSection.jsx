@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { listSkills } from "@/lib/contentApi";
 
 
-const skills = [
+const fallbackSkills = [
 
     // Frontend skills
 
@@ -28,6 +29,22 @@ const categories = ["all", "Frontend", "Backend", "Tools"];
 export const SkillsSection = () => {
 
     const [activeCategory, setActiveCategory] = useState("all");
+    const [skills, setSkills] = useState(fallbackSkills);
+
+    useEffect(() => {
+        let cancelled = false;
+        listSkills()
+            .then((items) => {
+                if (cancelled) return;
+                if (Array.isArray(items) && items.length > 0) setSkills(items);
+            })
+            .catch(() => {
+                // Keep fallbackSkills on error
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const filteredSkills = skills.filter(skill => activeCategory === "all" || skill.category === activeCategory);
 
@@ -55,8 +72,8 @@ export const SkillsSection = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSkills.map((skill,key) =>(
-                <div key={key} className="bg-card p-6 rounded-lg shadow-xs card-hover">
+            {filteredSkills.map((skill) =>(
+                <div key={skill.id ?? `${skill.name}-${skill.category}`} className="bg-card p-6 rounded-lg shadow-xs card-hover">
 
                     <div className="text-left mb-4">
                         <h3 className="font-semibold text-lg">{skill.name}</h3>
