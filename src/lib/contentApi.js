@@ -6,6 +6,7 @@ import {
   getDoc,
   getDocs,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -29,6 +30,17 @@ export async function getSection(sectionId) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
+export async function upsertSection(sectionId, data) {
+  await setDoc(
+    doc(db, "sections", sectionId),
+    {
+      ...data,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
 export async function listSkills() {
   const snap = await getDocs(collection(db, "skills"));
   const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -44,6 +56,27 @@ export async function listProjects({ publishedOnly = true } = {}) {
     : allItems;
   filtered.sort(byOrderThenName);
   return filtered;
+}
+
+export async function createSkill(data) {
+  const payload = {
+    ...data,
+    updatedAt: serverTimestamp(),
+  };
+  const ref = await addDoc(collection(db, "skills"), payload);
+  return ref.id;
+}
+
+export async function updateSkill(skillId, data) {
+  const payload = {
+    ...data,
+    updatedAt: serverTimestamp(),
+  };
+  await updateDoc(doc(db, "skills", skillId), payload);
+}
+
+export async function deleteSkill(skillId) {
+  await deleteDoc(doc(db, "skills", skillId));
 }
 
 export async function createProject(data) {

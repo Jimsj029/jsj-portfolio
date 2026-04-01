@@ -55,13 +55,14 @@ export const ProjectsSection = () => {
   const [form, setForm] = useState({
     title: '',
     description: '',
-    tags: '',
+    tags: [],
     githubUrl: '',
     liveUrl: '',
     order: 1,
     published: true,
   });
   const [imageFile, setImageFile] = useState(null);
+  const [tagInput, setTagInput] = useState('');
 
   const toTagList = (tags) => {
     if (Array.isArray(tags)) return tags;
@@ -106,12 +107,13 @@ export const ProjectsSection = () => {
     setForm({
       title: '',
       description: '',
-      tags: '',
+      tags: [],
       githubUrl: '',
       liveUrl: '',
       order: projects.length + 1,
       published: true,
     });
+    setTagInput('');
     setImageFile(null);
     setEditingProjectId('');
   };
@@ -121,13 +123,33 @@ export const ProjectsSection = () => {
     setForm({
       title: project.title ?? '',
       description: project.description ?? '',
-      tags: toTagList(project.tags).join(', '),
+      tags: toTagList(project.tags),
       githubUrl: project.githubUrl ?? '',
       liveUrl: project.liveUrl ?? '',
       order: Number.isFinite(project.order) ? project.order : 1,
       published: project.published === true,
     });
+    setTagInput('');
     setImageFile(null);
+  };
+
+  const addTag = () => {
+    const nextTag = tagInput.trim();
+    if (!nextTag) return;
+    setForm((prev) => {
+      if (prev.tags.some((tag) => tag.toLowerCase() === nextTag.toLowerCase())) {
+        return prev;
+      }
+      return { ...prev, tags: [...prev.tags, nextTag] };
+    });
+    setTagInput('');
+  };
+
+  const removeTag = (tagToRemove) => {
+    setForm((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
+    }));
   };
 
   const handleSubmit = async (event) => {
@@ -146,7 +168,7 @@ export const ProjectsSection = () => {
       const payload = {
         title: form.title.trim(),
         description: form.description.trim(),
-        tags: toTagList(form.tags),
+        tags: form.tags,
         githubUrl: form.githubUrl.trim(),
         liveUrl: form.liveUrl.trim(),
         order: Number(form.order) || 1,
@@ -263,13 +285,41 @@ export const ProjectsSection = () => {
                 />
               </div>
               <div>
-                <label className="text-sm text-muted-foreground">Tags (comma separated)</label>
-                <input
-                  className="w-full rounded-md bg-secondary/70 px-3 py-2 mt-1"
-                  value={form.tags}
-                  onChange={(e) => setForm((prev) => ({ ...prev, tags: e.target.value }))}
-                  placeholder="React, Firebase, Tailwind"
-                />
+                <label className="text-sm text-muted-foreground">Tags</label>
+                <div className="flex gap-2 mt-1">
+                  <input
+                    className="w-full rounded-md bg-secondary/70 px-3 py-2"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        addTag();
+                      }
+                    }}
+                    placeholder="Type tag and press Enter"
+                  />
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded-full bg-secondary/70 text-foreground text-sm"
+                    onClick={addTag}
+                  >
+                    Add
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {form.tags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      className="bg-primary text-primary-foreground px-2 py-1 rounded text-xs"
+                      onClick={() => removeTag(tag)}
+                      title="Remove tag"
+                    >
+                      {tag} ×
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <label className="text-sm text-muted-foreground">Image File</label>
