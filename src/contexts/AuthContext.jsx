@@ -60,6 +60,10 @@ export function AuthProvider({ children }) {
           return false;
         }
       },
+      async getToken(forceRefresh = false) {
+        if (!auth.currentUser) return null;
+        return auth.currentUser.getIdToken(forceRefresh);
+      },
     }),
     [user, isAdmin, loading]
   );

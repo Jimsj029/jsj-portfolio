@@ -1,8 +1,12 @@
 import {
+  addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
+  serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -40,4 +44,25 @@ export async function listProjects({ publishedOnly = true } = {}) {
     : allItems;
   filtered.sort(byOrderThenName);
   return filtered;
+}
+
+export async function createProject(data) {
+  const payload = {
+    ...data,
+    updatedAt: serverTimestamp(),
+  };
+  const ref = await addDoc(collection(db, "projects"), payload);
+  return ref.id;
+}
+
+export async function updateProject(projectId, data) {
+  const payload = {
+    ...data,
+    updatedAt: serverTimestamp(),
+  };
+  await updateDoc(doc(db, "projects", projectId), payload);
+}
+
+export async function deleteProject(projectId) {
+  await deleteDoc(doc(db, "projects", projectId));
 }
