@@ -57,6 +57,7 @@ export const ProjectsSection = () => {
   const [activeImageByProject, setActiveImageByProject] = useState({});
   const dragStateRef = useRef({});
   const suppressClickRef = useRef({});
+  const imageInputRef = useRef(null);
 
   const [form, setForm] = useState({
     title: '',
@@ -288,6 +289,28 @@ export const ProjectsSection = () => {
     }));
   };
 
+  const removePendingImage = (indexToRemove) => {
+    setImageFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const appendSelectedImageFiles = (files) => {
+    const selected = Array.from(files ?? []);
+    if (selected.length === 0) return;
+
+    setImageFiles((prev) => {
+      const existingKeys = new Set(
+        prev.map((file) => `${file.name}-${file.size}-${file.lastModified}`)
+      );
+      const deduped = selected.filter((file) => {
+        const key = `${file.name}-${file.size}-${file.lastModified}`;
+        if (existingKeys.has(key)) return false;
+        existingKeys.add(key);
+        return true;
+      });
+      return [...prev, ...deduped];
+    });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!isAdmin || !editMode) return;
@@ -401,6 +424,20 @@ export const ProjectsSection = () => {
     setIsModalOpen(true);
   };
 
+  const openExistingImagesPreview = (clickedIndex) => {
+    const images = Array.isArray(form.existingImageUrls) ? form.existingImageUrls : [];
+    if (images.length === 0) return;
+
+    const safeIndex = Math.min(Math.max(clickedIndex, 0), images.length - 1);
+    setSelectedImage({
+      title: form.title || 'Project image',
+      imageUrl: images[safeIndex],
+      imageUrls: images,
+      initialIndex: safeIndex,
+    });
+    setIsModalOpen(true);
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedImage(null);
@@ -492,22 +529,56 @@ export const ProjectsSection = () => {
               <div>
                 <label className="text-sm text-muted-foreground">Project Images</label>
                 <input
+                  ref={imageInputRef}
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
                   multiple
-                  className="w-full rounded-md bg-secondary/70 px-3 py-2 mt-1"
-                  onChange={(e) => setImageFiles(Array.from(e.target.files ?? []))}
+                  className="hidden"
+                  onChange={(e) => {
+                    appendSelectedImageFiles(e.target.files);
+                    e.target.value = '';
+                  }}
                 />
+                <button
+                  type="button"
+                  className="w-full rounded-md bg-secondary/70 px-3 py-2 mt-1 text-left"
+                  onClick={() => imageInputRef.current?.click()}
+                >
+                  Add Images
+                </button>
                 <p className="text-xs text-muted-foreground mt-1">
                   {imageFiles.length > 0
-                    ? `${imageFiles.length} image(s) selected`
+                    ? `${imageFiles.length} new image(s) queued`
                     : editingProjectId
-                    ? 'Select files only if you want to replace existing images.'
+                    ? 'Add files to append new images before pressing Update Project.'
                     : 'Choose one or more images.'}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Tip: Use Ctrl or Shift while selecting to pick multiple files.
                 </p>
+
+                {imageFiles.length > 0 ? (
+                  <div className="mt-3">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      New images to upload: {imageFiles.length}
+                    </p>
+                    <div className="grid grid-cols-1 gap-2">
+                      {imageFiles.map((file, idx) => (
+                        <div key={`${file.name}-${file.lastModified}-${idx}`} className="flex items-center justify-between rounded bg-secondary/40 px-2 py-1">
+                          <span className="text-xs text-foreground/90 truncate pr-2">{file.name}</span>
+                          <button
+                            type="button"
+                            className="px-2 py-0.5 rounded bg-black/60 text-white text-xs"
+                            onClick={() => removePendingImage(idx)}
+                            aria-label={`Remove pending image ${idx + 1}`}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
                 {form.existingImageUrls.length > 0 ? (
                   <div className="mt-3">
@@ -520,12 +591,16 @@ export const ProjectsSection = () => {
                           <img
                             src={imgUrl}
                             alt={`Project image ${idx + 1}`}
-                            className="h-20 w-full object-cover"
+                            className="h-20 w-full object-cover cursor-pointer"
+                            onClick={() => openExistingImagesPreview(idx)}
                           />
                           <button
                             type="button"
                             className="absolute top-1 right-1 px-2 py-0.5 rounded bg-black/60 text-white text-xs"
-                            onClick={() => removeExistingImage(idx)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeExistingImage(idx);
+                            }}
                             aria-label={`Remove image ${idx + 1}`}
                           >
                             Remove
