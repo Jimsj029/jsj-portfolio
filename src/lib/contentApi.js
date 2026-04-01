@@ -3,9 +3,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  orderBy,
-  query,
-  where,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -29,21 +26,18 @@ export async function getSection(sectionId) {
 }
 
 export async function listSkills() {
-  const q = query(collection(db, "skills"), orderBy("order", "asc"));
-  const snap = await getDocs(q);
+  const snap = await getDocs(collection(db, "skills"));
   const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   items.sort(byOrderThenName);
   return items;
 }
 
 export async function listProjects({ publishedOnly = true } = {}) {
-  const base = collection(db, "projects");
-  const q = publishedOnly
-    ? query(base, where("published", "==", true), orderBy("order", "asc"))
-    : query(base, orderBy("order", "asc"));
-
-  const snap = await getDocs(q);
-  const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  items.sort(byOrderThenName);
-  return items;
+  const snap = await getDocs(collection(db, "projects"));
+  const allItems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const filtered = publishedOnly
+    ? allItems.filter((item) => item.published === true)
+    : allItems;
+  filtered.sort(byOrderThenName);
+  return filtered;
 }

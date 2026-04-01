@@ -37,6 +37,25 @@ export const ProjectsSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [projects, setProjects] = useState(fallbackProjects);
 
+  const toTagList = (tags) => {
+    if (Array.isArray(tags)) return tags;
+    if (typeof tags === "string") {
+      return tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+    }
+    return [];
+  };
+
+  const toSafeUrl = (url) => {
+    if (!url || typeof url !== "string") return "";
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  };
+
   useEffect(() => {
     let cancelled = false;
     listProjects({ publishedOnly: true })
@@ -44,7 +63,8 @@ export const ProjectsSection = () => {
         if (cancelled) return;
         if (Array.isArray(items) && items.length > 0) setProjects(items);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Failed to load Firestore projects:", err);
         // Keep fallbackProjects on error
       });
     return () => {
@@ -95,7 +115,7 @@ export const ProjectsSection = () => {
                   {project.description}
                 </p>
                 <div className="flex flex-wrap gap-3 justify-center">
-                  {project.tags.map((tag, idx) => (
+                  {toTagList(project.tags).map((tag, idx) => (
                     <span
                       key={idx}
                       className="bg-primary text-primary-foreground px-2 py-1 rounded text-xs"
@@ -103,6 +123,38 @@ export const ProjectsSection = () => {
                       {tag}
                     </span>
                   ))}
+                </div>
+
+                <div className="mt-5 flex items-center justify-center gap-3">
+                  {toSafeUrl(project.liveUrl) ? (
+                    <a
+                      href={toSafeUrl(project.liveUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium transition-all duration-300 hover:shadow-[0_0_10px_rgba(139,92,246,0.5)]"
+                    >
+                      Live Demo
+                    </a>
+                  ) : (
+                    <span className="px-4 py-2 rounded-full bg-secondary/70 text-muted-foreground text-sm">
+                      No Live Link
+                    </span>
+                  )}
+
+                  {toSafeUrl(project.githubUrl) ? (
+                    <a
+                      href={toSafeUrl(project.githubUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 rounded-full bg-secondary/70 text-foreground text-sm font-medium transition-colors duration-300 hover:bg-secondary"
+                    >
+                      GitHub Repo
+                    </a>
+                  ) : (
+                    <span className="px-4 py-2 rounded-full bg-secondary/70 text-muted-foreground text-sm">
+                      No Repo Link
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

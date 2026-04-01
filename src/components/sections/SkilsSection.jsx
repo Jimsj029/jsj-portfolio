@@ -38,7 +38,8 @@ export const SkillsSection = () => {
                 if (cancelled) return;
                 if (Array.isArray(items) && items.length > 0) setSkills(items);
             })
-            .catch(() => {
+            .catch((err) => {
+                console.error("Failed to load Firestore skills:", err);
                 // Keep fallbackSkills on error
             });
         return () => {
