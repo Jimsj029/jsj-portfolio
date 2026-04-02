@@ -128,76 +128,121 @@ app.post("/api/contact", contactLimiter, async (req, res) => {
   const submittedAt = new Date().toUTCString();
 
   const html = `
-    <div style="margin:0;padding:0;background:#eef2ff;">
+    <div style="margin:0;padding:0;background:#080d1a;">
       <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;visibility:hidden;">
         Portfolio inquiry from ${safeName}: ${safeSubject}
       </div>
 
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#eef2ff;padding:32px 12px;font-family:Verdana,Arial,sans-serif;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:linear-gradient(160deg,#0a0f1e 0%,#0d1530 50%,#080d1a 100%);padding:40px 16px;font-family:Georgia,'Times New Roman',serif;">
         <tr>
           <td align="center">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:720px;background:#ffffff;border:1px solid #dbe4ff;border-radius:20px;overflow:hidden;box-shadow:0 16px 32px rgba(37,99,235,0.15);">
+
+            <!-- Header badge -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
               <tr>
-                <td style="padding:0;">
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                    <tr>
-                      <td width="34%" valign="top" style="background:linear-gradient(180deg,#312e81 0%,#1d4ed8 100%);padding:28px 20px;">
-                        <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#bfdbfe;font-weight:700;">Get In Touch</p>
-                        <h2 style="margin:0 0 14px 0;font-size:24px;line-height:1.2;color:#ffffff;font-weight:800;">New Lead</h2>
-                        <p style="margin:0 0 24px 0;font-size:13px;line-height:1.6;color:#dbeafe;">Someone reached out from your portfolio contact form.</p>
-
-                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:rgba(255,255,255,0.1);border:1px solid rgba(191,219,254,0.3);border-radius:12px;">
-                          <tr>
-                            <td style="padding:10px 12px;font-size:11px;color:#c7d2fe;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Submitted</td>
-                          </tr>
-                          <tr>
-                            <td style="padding:0 12px 12px 12px;font-size:12px;line-height:1.5;color:#ffffff;">${submittedAt}</td>
-                          </tr>
-                        </table>
-                      </td>
-
-                      <td width="66%" valign="top" style="padding:26px 24px 22px 24px;background:#ffffff;">
-                        <h1 style="margin:0 0 16px 0;font-size:28px;line-height:1.15;color:#0f172a;font-weight:800;">${safeSubject}</h1>
-
-                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:14px;background:#f8faff;border:1px solid #dbeafe;border-radius:12px;">
-                          <tr>
-                            <td style="padding:12px 14px;">
-                              <p style="margin:0 0 4px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#6366f1;font-weight:700;">Sender Name</p>
-                              <p style="margin:0;font-size:15px;line-height:1.4;color:#111827;font-weight:700;">${safeName}</p>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td style="padding:0 14px 12px 14px;">
-                              <p style="margin:0 0 4px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#6366f1;font-weight:700;">Sender Email</p>
-                              <p style="margin:0;font-size:14px;line-height:1.4;">
-                                <a href="mailto:${safeEmail}" style="color:#1d4ed8;text-decoration:underline;">${safeEmail}</a>
-                              </p>
-                            </td>
-                          </tr>
-                        </table>
-
-                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #e2e8f0;border-radius:12px;background:#ffffff;">
-                          <tr>
-                            <td style="padding:14px;">
-                              <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;font-weight:700;">Message</p>
-                              <p style="margin:0;font-size:15px;line-height:1.75;color:#0f172a;">${safeMessageHtml}</p>
-                            </td>
-                          </tr>
-                        </table>
-
-                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:16px;">
-                          <tr>
-                            <td>
-                              <a href="mailto:${safeEmail}?subject=Re:%20${encodeURIComponent(subject)}" style="display:inline-block;background:#1d4ed8;border:1px solid #1e40af;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">Reply to Sender</a>
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-                    </tr>
-                  </table>
+                <td style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.4);border-radius:999px;padding:6px 18px;">
+                  <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#a78bfa;font-weight:700;font-family:Verdana,Arial,sans-serif;">&#10022; &nbsp; New Portfolio Inquiry &nbsp; &#10022;</span>
                 </td>
               </tr>
             </table>
+
+            <!-- Main card -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:660px;background:linear-gradient(135deg,#111827 0%,#0f172a 100%);border:1px solid rgba(139,92,246,0.35);border-radius:24px;overflow:hidden;box-shadow:0 0 60px rgba(139,92,246,0.2),0 24px 48px rgba(0,0,0,0.6);">
+
+              <!-- Hero banner -->
+              <tr>
+                <td style="padding:0;overflow:hidden;">
+                  <div style="position:relative;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#1e3a8a 100%);padding:40px 32px 36px;overflow:hidden;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                      <tr>
+                        <td>
+                          <p style="margin:0 0 6px 0;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#818cf8;font-weight:700;font-family:Verdana,Arial,sans-serif;">Get In Touch</p>
+                          <h1 style="margin:0 0 10px 0;font-size:36px;line-height:1.1;color:#ffffff;font-weight:400;letter-spacing:-0.5px;">New Lead</h1>
+                          <p style="margin:0 0 24px 0;font-size:14px;line-height:1.65;color:#a5b4fc;font-family:Verdana,Arial,sans-serif;">Someone reached out from your portfolio contact form.</p>
+
+                          <!-- Submitted timestamp pill -->
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-table;">
+                            <tr>
+                              <td style="background:rgba(255,255,255,0.07);border:1px solid rgba(165,180,252,0.25);border-radius:12px;padding:10px 16px;">
+                                <p style="margin:0 0 3px 0;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#818cf8;font-weight:700;font-family:Verdana,Arial,sans-serif;">Submitted</p>
+                                <p style="margin:0;font-size:13px;color:#e0e7ff;font-family:Verdana,Arial,sans-serif;">${submittedAt}</p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Gradient divider -->
+              <tr>
+                <td style="padding:0;font-size:0;line-height:0;">
+                  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,0.6),rgba(59,130,246,0.6),transparent);"></div>
+                </td>
+              </tr>
+
+              <!-- Content body -->
+              <tr>
+                <td style="padding:32px 32px 28px;">
+
+                  <!-- Subject line -->
+                  <h2 style="margin:0 0 24px 0;font-size:26px;line-height:1.2;color:#f1f5f9;font-weight:400;letter-spacing:-0.3px;">${safeSubject}</h2>
+
+                  <!-- Sender info card -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:16px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.25);border-radius:14px;overflow:hidden;">
+                    <tr>
+                      <td style="padding:16px 18px 0 18px;">
+                        <p style="margin:0 0 4px 0;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#a78bfa;font-weight:700;font-family:Verdana,Arial,sans-serif;">Sender Name</p>
+                        <p style="margin:0 0 16px 0;font-size:17px;color:#f1f5f9;font-weight:400;">${safeName}</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:0 18px;height:1px;background:rgba(139,92,246,0.15);font-size:0;line-height:0;">&nbsp;</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:16px 18px;">
+                        <p style="margin:0 0 4px 0;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#a78bfa;font-weight:700;font-family:Verdana,Arial,sans-serif;">Sender Email</p>
+                        <a href="mailto:${safeEmail}" style="font-size:15px;color:#818cf8;text-decoration:none;font-family:Verdana,Arial,sans-serif;">${safeEmail}</a>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Message card -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:24px;background:rgba(255,255,255,0.03);border:1px solid rgba(100,116,139,0.25);border-radius:14px;">
+                    <tr>
+                      <td style="padding:16px 18px;">
+                        <p style="margin:0 0 8px 0;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#94a3b8;font-weight:700;font-family:Verdana,Arial,sans-serif;">Message</p>
+                        <p style="margin:0;font-size:15px;line-height:1.8;color:#cbd5e1;font-family:Verdana,Arial,sans-serif;">${safeMessageHtml}</p>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- CTA button -->
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:999px;box-shadow:0 0 20px rgba(139,92,246,0.45);">
+                        <a href="mailto:${safeEmail}?subject=Re:%20${encodeURIComponent(subject)}" style="display:inline-block;padding:13px 28px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:0.03em;font-family:Verdana,Arial,sans-serif;">Reply to Sender &#8594;</a>
+                      </td>
+                    </tr>
+                  </table>
+
+                </td>
+              </tr>
+
+              <!-- Footer strip -->
+              <tr>
+                <td style="padding:0;">
+                  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,0.3),transparent);"></div>
+                  <div style="background:rgba(139,92,246,0.04);padding:16px 32px;">
+                    <p style="margin:0;font-size:11px;color:#475569;text-align:center;font-family:Verdana,Arial,sans-serif;letter-spacing:0.05em;">Jimuel A. San Juan &middot; Portfolio Contact Form &middot; Auto-generated notification</p>
+                  </div>
+                </td>
+              </tr>
+
+            </table>
+
           </td>
         </tr>
       </table>
