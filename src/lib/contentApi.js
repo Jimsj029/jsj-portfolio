@@ -5,9 +5,11 @@ import {
   doc,
   getDoc,
   getDocs,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -49,11 +51,12 @@ export async function listSkills() {
 }
 
 export async function listProjects({ publishedOnly = true } = {}) {
-  const snap = await getDocs(collection(db, "projects"));
+  const projectsRef = collection(db, "projects");
+  const snap = publishedOnly
+    ? await getDocs(query(projectsRef, where("published", "==", true)))
+    : await getDocs(projectsRef);
   const allItems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  const filtered = publishedOnly
-    ? allItems.filter((item) => item.published === true)
-    : allItems;
+  const filtered = allItems;
   filtered.sort(byOrderThenName);
   return filtered;
 }

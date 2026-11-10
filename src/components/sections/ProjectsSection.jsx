@@ -49,8 +49,10 @@ export const ProjectsSection = () => {
 
   const [selectedImage, setSelectedImage] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [projects, setProjects] = useState(fallbackProjects);
+  const [projects, setProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [showUnpublished, setShowUnpublished] = useState(false);
   const [savingProject, setSavingProject] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [editingProjectId, setEditingProjectId] = useState('');
@@ -188,8 +190,10 @@ export const ProjectsSection = () => {
 
   const fetchProjects = useCallback(async () => {
     setLoadingProjects(true);
+    setLoadError('');
     try {
-      const items = await listProjects({ publishedOnly: !(isAdmin && editMode) });
+      const canSeeUnpublished = isAdmin && editMode && showUnpublished;
+      const items = await listProjects({ publishedOnly: !canSeeUnpublished });
       if (Array.isArray(items) && items.length > 0) {
         setProjects(items);
       } else if (items.length === 0) {
@@ -197,14 +201,22 @@ export const ProjectsSection = () => {
       }
     } catch (err) {
       console.error("Failed to load Firestore projects:", err);
+      setProjects([]);
+      setLoadError(err?.message ?? 'Unable to read projects from Firestore.');
     } finally {
       setLoadingProjects(false);
     }
-  }, [isAdmin, editMode]);
+  }, [isAdmin, editMode, showUnpublished]);
 
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
+
+  useEffect(() => {
+    if (!(isAdmin && editMode)) {
+      setShowUnpublished(false);
+    }
+  }, [isAdmin, editMode]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -454,11 +466,33 @@ export const ProjectsSection = () => {
           creativity.
         </p>
 
+        {loadError ? (
+          <div className="mb-6 rounded-md border border-red-500/40 bg-red-500/10 px-4 py-3 text-left text-sm text-red-200">
+            Failed to read projects: {loadError}
+            {String(loadError).toLowerCase().includes('missing or insufficient permissions') ? (
+              <p className="mt-2 text-red-100/90">
+                Firestore rules are blocking public reads for the projects collection.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         {isAdmin && editMode ? (
           <form onSubmit={handleSubmit} className="mb-10 p-5 rounded-lg bg-card text-left">
             <h3 className="text-xl font-semibold mb-4">
               {editingProjectId ? 'Edit Project' : 'Add Project'}
             </h3>
+            <div className="mb-4 flex items-center gap-2">
+              <input
+                id="project-show-unpublished"
+                type="checkbox"
+                checked={showUnpublished}
+                onChange={(e) => setShowUnpublished(e.target.checked)}
+              />
+              <label htmlFor="project-show-unpublished" className="text-sm text-muted-foreground">
+                Show unpublished projects in list
+              </label>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-muted-foreground">Title</label>
@@ -751,6 +785,9 @@ export const ProjectsSection = () => {
               </div>
               <div className="p-4">
                 <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
+                {isAdmin && editMode && project.published !== true ? (
+                  <p className="text-xs text-muted-foreground mb-2">Unpublished</p>
+                ) : null}
                 <p className="text-muted-foreground mb-4 text-center">
                   {project.description}
                 </p>
